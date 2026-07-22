@@ -1,0 +1,2 @@
+Adafruit_BBIO==1.2.5
+gpiod==2.2.0
