@@ -1,5 +1,6 @@
-import Adafruit_BBIO.GPIO as GPIO
 import time
+
+import Adafruit_BBIO.GPIO as GPIO
 
 # Pin the LED is wired to
 LED_PIN = "P9_23"

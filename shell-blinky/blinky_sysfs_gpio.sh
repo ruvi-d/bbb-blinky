@@ -7,7 +7,7 @@ GPIO_PATH=/sys/class/gpio/gpio$GPIO
 # Export the pin if it isn't already
 if [ ! -d "$GPIO_PATH" ]; then
     echo $GPIO > /sys/class/gpio/export
-    sleep 1
+    while [ ! -w "$GPIO_PATH/direction" ]; do sleep 0.05; done
 fi
 
 # Configure the pin as an output
