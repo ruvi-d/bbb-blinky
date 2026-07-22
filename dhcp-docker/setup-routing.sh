@@ -6,6 +6,7 @@
 # Usage:
 #   sudo ./setup-routing.sh up      # configure IP + NAT, start the DHCP container
 #   sudo ./setup-routing.sh down    # undo everything, stop the DHCP container
+#   sudo ./setup-routing.sh restart # down, then up
 
 set -euo pipefail
 
@@ -111,8 +112,14 @@ down() {
   echo "Done."
 }
 
+restart() {
+  down
+  up
+}
+
 case "${1:-up}" in
   up) up ;;
   down) down ;;
-  *) echo "Usage: $0 [up|down]" >&2; exit 1 ;;
+  restart) restart ;;
+  *) echo "Usage: $0 [up|down|restart]" >&2; exit 1 ;;
 esac
