@@ -32,9 +32,7 @@ static void delay(void)
 		;
 }
 
-// `used`: only referenced from inline asm below, invisible to the optimizer
-__attribute__((used))
-static void blink(void)
+int main(void)
 {
 	// 1. enable GPIO1 module clock
 	CM_PER_L4LS_CLKCTRL = MODULEMODE_ENABLE;
@@ -57,7 +55,7 @@ static void blink(void)
 	}
 }
 
-// Entrypoint: ROM jumps here in ARM mode. Sets sp (blink()/delay() need a
+// Entrypoint: ROM jumps here in ARM mode. Sets sp (main()/delay() need a
 // valid stack even though they hold no state of their own) then never
 // returns.
 __attribute__((naked, noreturn, section(".text._start")))
@@ -65,6 +63,6 @@ void _start(void)
 {
 	__asm__ volatile (
 		"ldr	sp, =__stack_top \n"
-		"bl	blink            \n"
+		"bl	main             \n"
 	);
 }

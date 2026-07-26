@@ -12,13 +12,8 @@ doesn't need one. C code can't make that assumption: even though nothing
 here uses stack memory for locals in any meaningful way, GCC's calling
 convention still expects a valid `sp` before the first `bl`. So `main.c`
 adds one thing the asm version didn't need: a tiny naked `_start` that loads
-`sp` from a linker-provided `__stack_top` symbol and branches into `blink()`,
+`sp` from a linker-provided `__stack_top` symbol and branches into `main()`,
 which then does the exact same four steps as the asm version.
-
-`blink()` is marked `__attribute__((used))` because it's only referenced
-from inline asm inside `_start` — invisible to the optimizer, which would
-otherwise treat it as dead code and drop it (confirmed: without this, the
-linker fails with `undefined reference to 'blink'`).
 
 ## Link map ([../blinky.ld](../blinky.ld))
 
