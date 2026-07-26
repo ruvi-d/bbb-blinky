@@ -1,9 +1,10 @@
 /* Minimal link map for AM335x peripheral / memory boot.
+ * Shared by ../bare-metal-asm and ../bare-metal-c.
  *
  * The ROM bootloader loads a single contiguous segment and jumps to its
  * start.  For peripheral boot (UART/Ethernet/USB) that address is the
  * hardcoded 0x402f0400 in the Cortex-A8 local RAM; the same address is used
- * for the memory-boot (MLO) load address (see the Makefile). */
+ * for the memory-boot (MLO) load address (see each project's Makefile). */
 
 MEMORY
 {
@@ -29,7 +30,11 @@ SECTIONS
 	.rodata : { *( .rodata .rodata.* ) } :image
 	.data   : { *( .data .data.* ) }     :image
 
-	/* this app has no stack/bss: it never touches sp and holds no state */
+	/* __stack_top: used by bare-metal-c's _start, which needs a valid sp
+	 * before its first `bl` -- points at the top of RAM, growing down.
+	 * bare-metal-asm never references it: it touches sp for nothing and
+	 * holds no state. no .bss either way: no mutable globals anywhere. */
+	__stack_top = ORIGIN( a8ram ) + LENGTH( a8ram );
 
 	/DISCARD/ : { *( .comment .ARM.attributes .note.* ) }
 }
