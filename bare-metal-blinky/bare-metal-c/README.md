@@ -34,9 +34,12 @@ arm-linux-gnueabi-objdump -d bin/blinky.elf
 arm-linux-gnueabi-objdump -d ../bare-metal-asm/bin/blinky.elf
 ```
 
-Both hit the same four MMIO addresses with the same immediate values in the
-same order, and `_start` is first in both images. The C binary comes out
-larger than the asm one (GCC inlines `delay()` at both call sites, and the
-`volatile` loop counter forces a stack spill/reload every iteration instead
-of staying in a register) — that overhead is expected and doesn't change
-behavior.
+Both hit the same MMIO registers with the same values in the same order, and
+`_start` is first in both images. The C binary comes out larger than the asm
+one (GCC inlines `delay()` at both call sites, and the `volatile` loop
+counter forces a stack spill/reload every iteration instead of staying in a
+register) — that overhead is expected and doesn't change which registers get
+written.
+
+It does change the blink *rate*, though: the same `BLINK_DELAY` iteration
+count costs several instructions per pass here versus two in the asm loop.

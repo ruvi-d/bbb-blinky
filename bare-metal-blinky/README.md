@@ -1,4 +1,4 @@
-# bare-meta-blinky
+# bare-metal-blinky
 
 Two implementations of the smallest possible baremetal app for the
 BeagleBone Black (AM335x, Cortex-A8): each blinks **GPIO1_28** forever and
@@ -9,7 +9,7 @@ GPIO1_28 is brought out on ball **V18/U18**, pin-mux name **GPMC_BEn1**.
 | Project | Language |
 |---------|----------|
 | [bare-metal-asm](bare-metal-asm) | Hand-written ARM assembly |
-| [bare-metal-c](bare-metal-c) | C lang |
+| [bare-metal-c](bare-metal-c) | C |
 
 The project [mvduin/bbb-asm-demo](https://github.com/mvduin/bbb-asm-demo)
 was used as a reference for the original assembly implementation, and is
@@ -29,7 +29,9 @@ also where [tools/](tools/) (below) comes from.
 
 The blink rate is set by a busy-wait (`BLINK_DELAY` in
 [bare-metal-asm/blinky.S](bare-metal-asm/blinky.S) /
-[bare-metal-c/main.c](bare-metal-c/main.c)).
+[bare-metal-c/main.c](bare-metal-c/main.c)). The two projects use the same
+iteration count but not the same loop body, so the C build blinks slower —
+see [bare-metal-c/README.md](bare-metal-c/README.md).
 
 ## Build
 

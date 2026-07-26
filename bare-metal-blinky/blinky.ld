@@ -1,5 +1,5 @@
 /* Minimal link map for AM335x peripheral / memory boot.
- * Shared by ../bare-metal-asm and ../bare-metal-c.
+ * Shared by bare-metal-asm/ and bare-metal-c/ (both sit alongside this file).
  *
  * The ROM bootloader loads a single contiguous segment and jumps to its
  * start.  For peripheral boot (UART/Ethernet/USB) that address is the
@@ -32,8 +32,8 @@ SECTIONS
 
 	/* __stack_top: used by bare-metal-c's _start, which needs a valid sp
 	 * before its first `bl` -- points at the top of RAM, growing down.
-	 * bare-metal-asm never references it: it touches sp for nothing and
-	 * holds no state. no .bss either way: no mutable globals anywhere. */
+	 * bare-metal-asm never references it: it never touches sp and holds no
+	 * state. no .bss either way: no mutable globals anywhere. */
 	__stack_top = ORIGIN( a8ram ) + LENGTH( a8ram );
 
 	/DISCARD/ : { *( .comment .ARM.attributes .note.* ) }

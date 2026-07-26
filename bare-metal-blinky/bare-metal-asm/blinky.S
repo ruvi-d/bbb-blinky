@@ -39,7 +39,9 @@
 
 //-------------- Code --------------------------------------------------------//
 
-// place first in the image; ROM enters here in ARM mode at the load address
+// .text._start is placed first in the image by the linker script; ROM enters
+// here in ARM mode at the load address.  Only the entrypoint belongs in it --
+// everything below switches back to plain .text.
 .section .text._start
 .arm
 
@@ -74,6 +76,10 @@ blink:
 	b	blink
 .done
 
+	.ltorg				// the three base addresses loaded above
+
+
+.section .text
 
 // crude busy-wait; clobbers r3 only
 .fun delay
@@ -82,5 +88,3 @@ blink:
 	bne	1b
 	ret
 .done
-
-.ltorg
