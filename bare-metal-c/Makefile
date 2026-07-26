@@ -1,5 +1,5 @@
 # Baremetal GPIO1_28 blinky for the BeagleBone Black (AM335x, Cortex-A8).
-# C port of ../bare-meta-asm.
+# C port of ../bare-metal-asm.
 #
 #   make          build everything (expects arm-linux-gnueabi- in $PATH)
 #   make clean    remove build artifacts

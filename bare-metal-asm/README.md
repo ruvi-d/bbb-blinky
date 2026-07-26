@@ -1,4 +1,4 @@
-# bare-meta-asm
+# bare-metal-asm
 
 The smallest possible baremetal app for the BeagleBone Black (AM335x,
 Cortex-A8): it blinks **GPIO1_28** forever and does nothing else.

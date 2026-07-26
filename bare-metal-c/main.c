@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-// C port of ../bare-meta-asm/blinky.S -- see that file for register-level
+// C port of ../bare-metal-asm/blinky.S -- see that file for register-level
 // comments. Toggles GPIO1_28 (ball V18/U18, pin-mux name GPMC_BEn1) forever.
 
 #define MMIO32(addr)  (*(volatile uint32_t *)(addr))

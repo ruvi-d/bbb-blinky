@@ -1,6 +1,6 @@
-# bare-meta-c
+# bare-metal-c
 
-A C port of [../bare-meta-asm](../bare-meta-asm): the smallest reasonable
+A C port of [../bare-metal-asm](../bare-metal-asm): the smallest reasonable
 baremetal C app for the BeagleBone Black (AM335x, Cortex-A8). It blinks
 **GPIO1_28** forever and does nothing else — same behavior as the asm
 version, same register pokes, same blink rate.
@@ -9,7 +9,7 @@ GPIO1_28 is brought out on ball **V18/U18**, pin-mux name **GPMC_BEn1**.
 
 ## What it does
 
-Identical to `bare-meta-asm`, see [main.c](main.c):
+Identical to `bare-metal-asm`, see [main.c](main.c):
 
 1. **Enable the GPIO1 module clock** — `CM_PER_GPIO1_CLKCTRL` @ `0x44E000AC`
    ← `MODULEMODE=ENABLE`, then wait for `IDLEST[17:16] == Func`.
@@ -40,7 +40,7 @@ linker fails with `undefined reference to 'blink'`).
 
 ## Link map ([blinky.ld](blinky.ld))
 
-Same as `bare-meta-asm/blinky.ld` — same `a8ram` region, same
+Same as `bare-metal-asm/blinky.ld` — same `a8ram` region, same
 `0x402f0400` load address — plus one addition:
 
 ```
@@ -55,7 +55,7 @@ The Makefile looks for a `arm-linux-gnueabi-` toolchain. If it's not on your
 host `$PATH`, build inside the `hw101:latest` Docker image:
 
 ```bash
-docker run --rm -v "$PWD/..":/src -w /src/bare-meta-c hw101:latest make clean all
+docker run --rm -v "$PWD/..":/src -w /src/bare-metal-c hw101:latest make clean all
 ```
 
 or, with the toolchain available directly:
@@ -78,7 +78,7 @@ make all
 
 ```bash
 arm-linux-gnueabi-objdump -d bin/blinky.elf
-arm-linux-gnueabi-objdump -d ../bare-meta-asm/bin/blinky.elf
+arm-linux-gnueabi-objdump -d ../bare-metal-asm/bin/blinky.elf
 ```
 
 Both hit the same four MMIO addresses with the same immediate values in the
@@ -90,8 +90,8 @@ behavior.
 
 ## Boot tooling (`tools/`)
 
-Same `mk-gpimage` / `raw-mmc-header.img` as `bare-meta-asm/tools/` (copied
-verbatim) — see [../bare-meta-asm/README.md](../bare-meta-asm/README.md) for
+Same `mk-gpimage` / `raw-mmc-header.img` as `bare-metal-asm/tools/` (copied
+verbatim) — see [../bare-metal-asm/README.md](../bare-metal-asm/README.md) for
 how the SD card image framing works.
 
 ### Boot from µSD (raw MMC)
