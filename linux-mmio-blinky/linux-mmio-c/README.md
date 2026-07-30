@@ -5,7 +5,8 @@ mapping the GPIO and pin-mux registers with `mmap()` on `/dev/mem` — the same
 registers, in the same order, as
 [../../bare-metal-blinky](../../bare-metal-blinky) and
 [../linux-mmio-kernel](../linux-mmio-kernel), but from a process rather than
-from kernel context.
+from kernel context. [../linux-mmio-bash](../linux-mmio-bash) does the same
+thing again from a shell script.
 
 GPIO1_28 is brought out on ball **V18/U18**, pin-mux name **GPMC_BEn1**.
 
@@ -42,7 +43,7 @@ wherever the last toggle put it. The kernel module undoes its writes on
 | Addresses | physical, no MMU | virtual, `mmap()` of `/dev/mem` |
 | GPIO1 module clock | enabled explicitly via `CM_PER_GPIO1_CLKCTRL` | left to `gpio-omap` (see [The clock caveat](#the-clock-caveat)) |
 | Blink timing | busy-wait loop | `nanosleep()`, 500 ms half-period (1 Hz) |
-| Termination | never returns | never returns |
+| Privilege | none — the CPU owns the machine | root, for `/dev/mem` |
 
 Registers are reached through `volatile uint32_t` accesses — userspace has no
 `readl()`/`writel()`. `volatile` keeps the compiler from merging, reordering or
@@ -106,8 +107,12 @@ The supported equivalent is a device-tree node that sets the mux, plus
 libgpiod to drive the line — no `/dev/mem`, no root, no fighting the drivers:
 
 ```bash
-gpioset gpiochip1 28=1
+gpioset --chip gpiochip1 28=1     # libgpiod 2.x
+gpioset gpiochip1 28=1            # libgpiod 1.x
 ```
+
+Both hold the line only for as long as `gpioset` runs, and release it on exit —
+which is the point: the kernel knows who owns the pin and when.
 
 That goes through `gpio-omap`, which arbitrates between users, keeps the clock
 awake while the line is held, and knows whether something else has already
@@ -149,6 +154,7 @@ The rate is fixed at 1 Hz (`half_period` in [main.c](main.c)) — there are no
 command-line options.
 
 Do not run this at the same time as
-[../linux-mmio-kernel](../linux-mmio-kernel): both drive the same pin, and the
-module will restore the mux and `OE` values it saw on load — which, if this
-program went first, are this program's, not the kernel's.
+[../linux-mmio-kernel](../linux-mmio-kernel) or
+[../linux-mmio-bash](../linux-mmio-bash): all three drive the same pin, and the
+kernel module will restore the mux and `OE` values it saw on load — which, if
+this program went first, are this program's, not the kernel's.

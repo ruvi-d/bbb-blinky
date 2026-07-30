@@ -24,5 +24,7 @@ RPROVIDES:${PN} += "kernel-module-kblinky-mmio"
 
 # Hardcoded AM335x register addresses, and it relies on gpio-omap having
 # already ungated the GPIO1 clock -- so it is only meaningful on an AM335x
-# machine whose kernel has CONFIG_GPIO_OMAP. Adjust to match your MACHINE.
-#COMPATIBLE_MACHINE = "^(dogbonedark)$"
+# machine whose kernel has CONFIG_GPIO_OMAP. BitBake skips the recipe for any
+# other MACHINE rather than building a module that would fault on load.
+# Adjust to match your MACHINE.
+COMPATIBLE_MACHINE = "^(dogbonedark)$"

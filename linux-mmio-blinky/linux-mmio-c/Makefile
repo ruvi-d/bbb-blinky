@@ -25,7 +25,7 @@ $(BIN):
 	mkdir -p $(BIN)
 
 $(BIN)/blinky: main.c | $(BIN)
-	$(CC) $(CFLAGS) main.c -o $@ $(LDFLAGS)
+	$(CC) $(CFLAGS) $< -o $@ $(LDFLAGS)
 
 clean:
 	$(RM) $(BIN)/blinky

@@ -23,6 +23,11 @@
 # shell, modified, and written back separately, with a real (if narrow) race
 # against gpio-omap between the two steps.
 #
+# Like the other two versions this never returns, and it restores nothing:
+# Ctrl-C it and the mux and OE registers keep the values set here, with
+# pinctrl-single none the wiser. The kernel module undoes its writes on
+# rmmod; there is no equivalent here.
+#
 # Needs devmem2 on $PATH on the target -- it is not part of a stock BBB
 # rootfs. Needs root: /dev/mem is 0600 root:root.
 
@@ -41,28 +46,42 @@ CONF_GPMC_BE1N=0x44E10878	# control module: pin-mux conf reg for gpio1_28
 PINMUX_GPIO1_28=0x27		# mmode=7 (gpio) | rxactive=1
 
 GPIO1_OE=0x4804C134		# GPIO1 output enable, 0 = output
-GPIO1_SETDATAOUT=0x4804C194	# self-masking: 1 -> pin high
 GPIO1_CLEARDATAOUT=0x4804C190	# self-masking: 1 -> pin low
+GPIO1_SETDATAOUT=0x4804C194	# self-masking: 1 -> pin high
 
 PIN28=0x10000000
 
 HALF_PERIOD=0.5			# seconds; 1 Hz on/off cycle, matching the
-				# other two blinky variants
+				# other two blinky variants. A fractional
+				# sleep is not POSIX, but both busybox and
+				# coreutils accept one.
 
-#-------------- devmem2 helpers -----------------------------------------------
+#-------------- devmem2 helpers ----------------------------------------------
 
-# Read a 32-bit word and print it as a bare hex value, by picking the last
-# hex token out of devmem2's "Value at address 0x... (0x...): 0xNNNNNNNN"
-# line.
+# Read a 32-bit word and print it as a bare hex value (no "0x"), by picking
+# the trailing hex token out of devmem2's
+# "Read at address  0x4804C134 (0xb6f54134): 0xE61FFEFF" line. The other two
+# lines it prints ("/dev/mem opened.", "Memory mapped at address 0x....") end
+# in a period, so the $ anchor skips them.
+#
+# The empty check matters: without it a failed read would yield "", which the
+# caller would then splice into "0x" and hand to the shell's arithmetic as a
+# malformed number.
 devmem_read() {
-	devmem2 "$1" w | sed -n 's/.*: 0x\([0-9A-Fa-f]\+\)$/\1/p'
+	value=$(devmem2 "$1" w | sed -n 's/.*: 0x\([0-9A-Fa-f]\+\)$/\1/p')
+
+	if [ -z "$value" ]; then
+		echo "blinky.sh: could not read $1 via devmem2" >&2
+		exit 1
+	fi
+	echo "$value"
 }
 
 devmem_write() {
 	devmem2 "$1" w "$2" >/dev/null
 }
 
-#-------------- Implementation ------------------------------------------------
+#-------------- Implementation -----------------------------------------------
 
 # 1. Pin mux: point ball V18/U18 at its gpio1_28 function.
 devmem_write "$CONF_GPMC_BE1N" "$PINMUX_GPIO1_28"

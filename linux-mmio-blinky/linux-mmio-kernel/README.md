@@ -3,7 +3,8 @@
 A loadable kernel module that blinks **GPIO1_28** on a BeagleBone Black by
 writing the GPIO and pin-mux registers directly through `ioremap()` — the
 same registers, in the same order, as
-[../../bare-metal-blinky](../../bare-metal-blinky), but on top of a booted
+[../../bare-metal-blinky](../../bare-metal-blinky) and
+[../linux-mmio-c](../linux-mmio-c), but from kernel context on top of a booted
 Linux kernel.
 
 GPIO1_28 is brought out on ball **V18/U18**, pin-mux name **GPMC_BEn1**.
@@ -33,15 +34,17 @@ original `OE` and mux register values.
 
 | | bare metal | this module |
 |---|---|---|
+| Addresses | physical, no MMU | kernel virtual, `ioremap()` of the physical pages |
 | GPIO1 module clock | enabled explicitly via `CM_PER_GPIO1_CLKCTRL` | left to `gpio-omap` (see [The clock caveat](#the-clock-caveat)) |
 | Blink timing | busy-wait loop | delayed work item, 500 ms half-period (1 Hz) |
 | Termination | never returns | `module_exit()` restores every register it touched |
 
 `module_init()` must return, so the toggling cannot live in an endless loop the
-way it does in `blinky.S`; the work item is what keeps it going after init
-returns. It runs in process context on a system workqueue, so its timing is
-scheduler-dependent — fine for an LED, not for anything with real timing
-requirements.
+way it does in
+[bare-metal-asm/blinky.S](../../bare-metal-blinky/bare-metal-asm/blinky.S); the
+work item is what keeps it going after init returns. It runs in process context
+on a system workqueue, so its timing is scheduler-dependent — fine for an LED,
+not for anything with real timing requirements.
 
 ## Why `ioremap()` and not `devm_ioremap_resource()`
 
@@ -87,10 +90,33 @@ not depend on that, the options are, roughly in order of preference:
 - Poke `CM_PER_GPIO1_CLKCTRL` the way the bare-metal code does — which fights
   the clock framework and is the worst of the four.
 
+## Why this is wrong
+
+The supported equivalent is a device-tree node that sets the mux, plus the
+gpiod API to drive the line — no `ioremap()`, no addresses in the source, and
+no fighting the subsystems:
+
+```c
+struct gpio_desc *led = gpiod_get(dev, "blink", GPIOD_OUT_LOW);
+
+gpiod_set_value(led, 1);
+```
+
+That goes through `gpio-omap`, which arbitrates between users, keeps the clock
+awake while the line is held, and knows whether something else has already
+claimed the pin. A real driver would also bind to a device rather than doing
+its work in `module_init()`, so the mapping's lifetime follows the hardware's.
+Everything this module does by hand, it does wrong on purpose.
+
+If the LED only needs to blink, no C is required at all: describe it as a
+`gpio-leds` node in the device tree and let the `timer` LED trigger do the
+toggling.
+
 ## Layout
 
 This is a BitBake recipe, not a layer — there is no `conf/layer.conf` here.
-It builds out of tree against a **6.18** kernel.
+It builds out of tree against a **6.16** kernel. Nothing in the module is
+version-specific, so it should build against neighbouring versions too.
 
 ```
 recipes-kernel/kblinky-mmio/
@@ -151,3 +177,8 @@ boot instead.
 The rate is fixed at 1 Hz (`BLINK_HALF_PERIOD_MS` in
 [kblinky-mmio.c](recipes-kernel/kblinky-mmio/files/kblinky-mmio.c)) — there are
 no module parameters.
+
+Do not load this while [../linux-mmio-c](../linux-mmio-c) or
+[../linux-mmio-bash](../linux-mmio-bash) is running: all three drive the same
+pin, and this module restores the mux and `OE` values it saw on load — which,
+if one of the others went first, are that program's values, not the kernel's.

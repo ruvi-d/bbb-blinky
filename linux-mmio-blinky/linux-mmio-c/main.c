@@ -3,11 +3,11 @@
  * of an AM335x (BeagleBone Black) from a userspace process, by mapping the
  * GPIO and control-module registers through /dev/mem.
  *
- * This is the userspace counterpart of the bare-metal blinky and of the
- * kblinky-mmio kernel module in the bbb-blinky repo
- * (https://github.com/ruvi-d/bbb-blinky): same pin, same registers, same
- * write sequence -- but from an ordinary process, on top of a booted Linux
- * kernel.
+ * This is the userspace counterpart of the bare-metal blinky, of the
+ * kblinky-mmio kernel module and of the ../linux-mmio-bash shell script in the
+ * bbb-blinky repo (https://github.com/ruvi-d/bbb-blinky): same pin, same
+ * registers, same write sequence -- but from an ordinary process, on top of a
+ * booted Linux kernel.
  *
  * *** This is deliberately NOT how an application should drive a GPIO. ***
  *
