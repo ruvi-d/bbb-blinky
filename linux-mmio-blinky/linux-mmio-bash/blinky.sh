@@ -58,17 +58,30 @@ HALF_PERIOD=0.5			# seconds; 1 Hz on/off cycle, matching the
 
 #-------------- devmem2 helpers ----------------------------------------------
 
-# Read a 32-bit word and print it as a bare hex value (no "0x"), by picking
-# the trailing hex token out of devmem2's
-# "Read at address  0x4804C134 (0xb6f54134): 0xE61FFEFF" line. The other two
-# lines it prints ("/dev/mem opened.", "Memory mapped at address 0x....") end
-# in a period, so the $ anchor skips them.
+# Read a 32-bit word and print it as a "0x"-prefixed hex value, by picking
+# the value token out of devmem2's three lines of read output, e.g.:
+#   /dev/mem opened.
+#   Memory mapped at address 0xb6fc3000.
+#   Read at address  0x44E10878 (0xb6fc3878): 0x00000037
 #
-# The empty check matters: without it a failed read would yield "", which the
-# caller would then splice into "0x" and hand to the shell's arithmetic as a
-# malformed number.
+#   /^Read/     only the third line starts with "Read" -- this skips the
+#               other two lines (they're not data, just devmem2 narrating
+#               what it did) without needing to match their content.
+#   {print $NF} awk splits the matched line on whitespace and prints the
+#               last field ($NF). On the "Read at address ..." line that
+#               last field is the "0x00000037" value itself -- the two
+#               addresses earlier on the line don't matter, we only ever
+#               want whatever comes after the final space.
+#
+# The value comes out already "0x"-prefixed, so the caller can hand it
+# straight to shell arithmetic ($(( )) accepts 0x-prefixed hex literals)
+# instead of having to splice a bare hex string onto a literal "0x" itself.
+#
+# The empty check matters: without it a failed read would yield "", and
+# $(( "" & ~PIN28 )) would be a shell arithmetic error instead of a clean
+# message pointing at devmem2.
 devmem_read() {
-	value=$(devmem2 "$1" w | sed -n 's/.*: 0x\([0-9A-Fa-f]\+\)$/\1/p')
+	value=$(devmem2 "$1" w | awk '/^Read/{print $NF}')
 
 	if [ -z "$value" ]; then
 		echo "blinky.sh: could not read $1 via devmem2" >&2
@@ -92,7 +105,7 @@ devmem_write "$CONF_GPMC_BE1N" "$PINMUX_GPIO1_28"
 # wider window: nothing stops the kernel from writing OE between the read
 # below and the write that follows it.
 oe=$(devmem_read "$GPIO1_OE")
-oe=$(( (0x$oe & ~PIN28) & 0xFFFFFFFF ))
+oe=$(( (oe & ~PIN28) & 0xFFFFFFFF ))
 devmem_write "$GPIO1_OE" "$(printf '0x%08X' "$oe")"
 
 echo "blinking GPIO1_28 at 1 Hz"
