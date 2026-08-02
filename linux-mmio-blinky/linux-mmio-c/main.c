@@ -4,9 +4,9 @@
  * GPIO and control-module registers through /dev/mem.
  *
  * This is the userspace counterpart of the bare-metal blinky, of the
- * kblinky-mmio kernel module and of the ../linux-mmio-bash shell script in the
- * bbb-blinky repo (https://github.com/ruvi-d/bbb-blinky): same pin, same
- * registers, same write sequence -- but from an ordinary process, on top of a
+ * kblinky-mmio kernel module in the bbb-blinky repo
+ * (https://github.com/ruvi-d/bbb-blinky): same pin, same registers,
+ * same write sequence -- but from an ordinary process, on top of a
  * booted Linux kernel.
  *
  * *** This is deliberately NOT how an application should drive a GPIO. ***
@@ -24,7 +24,7 @@
  *      address in this process.  Only the offsets within the page carry over.
  *   2. No clock setup.  gpio-omap has already enabled the GPIO1 module clock
  *      (see the caveat above GPIO1_BASE below).
- *   3. Sleep instead of a busy-wait.  nanosleep() hands the CPU back to the
+ *   3. Sleep instead of a busy-wait.  sleep() hands the CPU back to the
  *      scheduler between toggles, which a spin loop would not.
  *
  * Like the bare-metal version this never returns, and it restores nothing:
@@ -40,7 +40,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
-#include <time.h>
 #include <unistd.h>
 
 /*-------------- Register access -------------------------------------------*/
@@ -95,8 +94,9 @@
 /*-------------- Blink rate ------------------------------------------------*/
 
 /* The LED is on for this long, then off for this long, so a full on/off cycle
- * takes 1 s -- a 1 Hz blink, matching the kernel module. */
-static const struct timespec half_period = { .tv_nsec = 500 * 1000 * 1000 };
+ * takes 2 s -- a 0.5 Hz blink.  sleep() only takes whole seconds, so this is
+ * coarser than the kernel module's 1 Hz (500 ms half-period). */
+#define HALF_PERIOD_S		1u
 
 /*-------------- Implementation --------------------------------------------*/
 
@@ -153,7 +153,7 @@ int main(void)
 	 * OE between the read and the write. */
 	REG32(gpio1_base, GPIO_OE) &= ~PIN28;
 
-	printf("blinking GPIO1_28 at 1 Hz\n");
+	printf("blinking GPIO1_28 at 0.5 Hz\n");
 
 	/* 3. Blink forever.  SETDATAOUT and CLEARDATAOUT are self-masking: a 1
 	 * bit acts on that pin, a 0 bit leaves it alone.  So a single write per
@@ -162,8 +162,8 @@ int main(void)
 	 * GPIO1_21..24), and no race with gpio-omap's own accesses. */
 	for (;;) {
 		REG32(gpio1_base, GPIO_SETDATAOUT) = PIN28;
-		nanosleep(&half_period, NULL);
+		sleep(HALF_PERIOD_S);
 		REG32(gpio1_base, GPIO_CLEARDATAOUT) = PIN28;
-		nanosleep(&half_period, NULL);
+		sleep(HALF_PERIOD_S);
 	}
 }
