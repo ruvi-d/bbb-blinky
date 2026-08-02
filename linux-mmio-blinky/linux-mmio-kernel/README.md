@@ -75,7 +75,12 @@ That is a dependency worth being explicit about: `gpio-omap` manages the clock
 with runtime PM and drops its reference at the end of probe, so a bank with no
 active users can idle. Accessing these registers with the clock gated is an
 **external abort on the L4LS interconnect**, not a write that quietly does
-nothing.
+nothing. AM335x peripherals sit behind the L4LS interconnect, gated by their
+own `CM_PER_*_CLKCTRL` bit; with the clock off, the interconnect can't
+complete the bus transaction and reports a bus error back to the core instead
+of just dropping the access. On Linux that surfaces as a data abort — a
+kernel oops (`Unhandled fault: external abort on non-linefetch` or similar),
+not a silently-ignored write or a read of garbage.
 
 On a BeagleBone Black bank 1 also drives the four on-board user LEDs, so it is
 kept awake in practice and this module gets away with it. If you would rather
@@ -177,8 +182,3 @@ boot instead.
 The rate is fixed at 1 Hz (`BLINK_HALF_PERIOD_MS` in
 [kblinky-mmio.c](recipes-kernel/kblinky-mmio/files/kblinky-mmio.c)) — there are
 no module parameters.
-
-Do not load this while [../linux-mmio-c](../linux-mmio-c) or
-[../linux-mmio-bash](../linux-mmio-bash) is running: all three drive the same
-pin, and this module restores the mux and `OE` values it saw on load — which,
-if one of the others went first, are that program's values, not the kernel's.
