@@ -5,8 +5,7 @@ mapping the GPIO and pin-mux registers with `mmap()` on `/dev/mem` — the same
 registers, in the same order, as
 [../../bare-metal-blinky](../../bare-metal-blinky) and
 [../linux-mmio-kernel](../linux-mmio-kernel), but from a process rather than
-from kernel context. [../linux-mmio-bash](../linux-mmio-bash) does the same
-thing again from a shell script.
+from kernel context.
 
 GPIO1_28 is brought out on ball **V18/U18**, pin-mux name **GPMC_BEn1**.
 
@@ -25,8 +24,8 @@ GPIO1_28 is brought out on ball **V18/U18**, pin-mux name **GPMC_BEn1**.
    rxactive=1).
 3. **Direction** — `GPIO1_OE` @ `+0x134`, clear bit 28 to make it an output.
 4. **Blink** — alternates `GPIO1_SETDATAOUT` @ `+0x194` and
-   `GPIO1_CLEARDATAOUT` @ `+0x190` ← `0x10000000` every 500 ms
-   (`nanosleep()`), i.e. a 1 Hz on/off cycle, forever. Both registers are
+   `GPIO1_CLEARDATAOUT` @ `+0x190` ← `0x10000000` every 1 s
+   (`sleep()`), i.e. a 0.5 Hz on/off cycle, forever. Both registers are
    self-masking, so a single write per toggle, no read-modify-write, and no
    chance of disturbing the other 31 pins of the bank (four of which are the
    on-board user LEDs, GPIO1_21..24).
@@ -42,7 +41,7 @@ wherever the last toggle put it. The kernel module undoes its writes on
 |---|---|---|
 | Addresses | physical, no MMU | virtual, `mmap()` of `/dev/mem` |
 | GPIO1 module clock | enabled explicitly via `CM_PER_GPIO1_CLKCTRL` | left to `gpio-omap` (see [The clock caveat](#the-clock-caveat)) |
-| Blink timing | busy-wait loop | `nanosleep()`, 500 ms half-period (1 Hz) |
+| Blink timing | busy-wait loop | `sleep()`, 1 s half-period (0.5 Hz) |
 | Privilege | none — the CPU owns the machine | root, for `/dev/mem` |
 
 Registers are reached through `volatile uint32_t` accesses — userspace has no
@@ -147,10 +146,10 @@ ssh root@<target> /tmp/blinky
 It prints one line and then blinks until killed:
 
 ```
-blinking GPIO1_28 at 1 Hz
+blinking GPIO1_28 at 0.5 Hz
 ```
 
-The rate is fixed at 1 Hz (`half_period` in [main.c](main.c)) — there are no
+The rate is fixed at 0.5 Hz (`HALF_PERIOD_S` in [main.c](main.c)) — there are no
 command-line options.
 
 Do not run this at the same time as
